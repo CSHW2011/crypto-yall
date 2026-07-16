@@ -50,10 +50,10 @@ To productize this for the community, you have **three real options**. Each come
 **What it is:** Each community member gets their own complete copy of the bot system running on their own infrastructure.
 
 **How it works:**
-1. Each user creates their own GitHub account (or sub-account)
+1. Each user creates their own GitHub account
 2. They fork the `crypto-yall` repo into their own GitHub
 3. They set up their own:
-   - Hyperliquid sub-account + API wallet
+   - Hyperliquid account (a single one — not sub-accounts, those require $100k+ volume) + API wallet
    - GitHub Gists for state
    - Email/Telegram for their own alerts
    - GitHub Actions secrets

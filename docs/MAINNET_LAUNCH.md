@@ -31,20 +31,29 @@ If any of those are "no," wait. Mainnet can wait.
 
 ---
 
+## About Sub-Accounts (Important Update)
+
+Hyperliquid **requires $100,000 in mainnet trading volume** before your account can create sub-accounts. Most users never hit this threshold, so sub-accounts are effectively unavailable for the vast majority of setups.
+
+**This is fine.** The bots have built-in isolation at the code level — each bot only manages positions it opened, has its own kill switch, and its own drawdown halt. Sub-accounts would only add one extra layer (preventing opposite positions from netting on the exchange), which is an efficiency optimization, not a safety issue.
+
+The rest of this guide assumes **no sub-accounts** — a single Hyperliquid account shared across all three bots. If you're one of the rare users who has hit $100k+ volume and wants sub-accounts, see the [optional sub-account setup](#optional-sub-account-setup) section at the bottom.
+
+---
+
 ## The Pre-Launch Checklist
 
 Each item below has its own section further down. Don't skip any.
 
 - [ ] **Step 1:** Decide on starting capital amounts (small for first week)
-- [ ] **Step 2:** Create Hyperliquid sub-accounts (one per bot) — strongly recommended
-- [ ] **Step 3:** Authorize API wallets on mainnet
-- [ ] **Step 4:** Bridge real USDC to each sub-account
-- [ ] **Step 5:** Tighten safety parameters
-- [ ] **Step 6:** Reset bot state Gists to fresh
-- [ ] **Step 7:** Run a test trade on mainnet
-- [ ] **Step 8:** Flip the testnet flag
-- [ ] **Step 9:** Watch first 10 runs manually
-- [ ] **Step 10:** Slowly scale up
+- [ ] **Step 2:** Authorize your API wallet on mainnet
+- [ ] **Step 3:** Bridge real USDC to your account
+- [ ] **Step 4:** Tighten safety parameters
+- [ ] **Step 5:** Reset bot state Gists to fresh
+- [ ] **Step 6:** Run a test trade on mainnet
+- [ ] **Step 7:** Flip the testnet flag
+- [ ] **Step 8:** Watch first 10 runs manually
+- [ ] **Step 9:** Slowly scale up
 
 ---
 
@@ -65,7 +74,7 @@ This is the amount you'd be **comfortable losing entirely**. If something goes w
 
 **Why so small?**
 - Real fills behave slightly differently from testnet (slippage, fees, partial fills)
-- The shared-account issue (without sub-accounts) is more visible at small scale
+- The shared-account limitation (positions from opposite-direction bots can net on the exchange) is more visible at small scale
 - You learn how the bot actually behaves with real money
 - Smaller positions = smaller potential losses while you're verifying
 
@@ -73,68 +82,37 @@ Scale up only after the system runs cleanly for at least a week.
 
 ---
 
-## Step 2: Create Hyperliquid Sub-Accounts
+## Step 2: Authorize Your API Wallet on Mainnet
 
-**Strongly recommended.** Without this, all three bots share the same Hyperliquid account, which means they can net against each other on the exchange. With sub-accounts, each bot has its own isolated margin account.
+Testnet and mainnet are separate environments. The API wallet that's authorized on testnet needs to be authorized again on mainnet before the bots can trade with real money.
 
-### How (Josh needs to do this himself in his Hyperliquid UI):
-
-1. Open https://app.hyperliquid.xyz/portfolio
-2. Connect Josh's main Coinbase wallet
-3. Look for "Sub-accounts" section
-4. Click "Create sub-account"
-5. Create 3 sub-accounts:
-   - Name: `Crypto Yall Daily`
-   - Name: `Crypto Yall Intraday`
-   - Name: `Crypto Yall Aggressive`
-6. Each sub-account gets its own address (looks like `0xabc...`). Save these addresses.
-
-### Then send Brendan a list of all 3 sub-account addresses.
-
-Brendan will need to update the bot code to use the right sub-account per bot. **This is not yet done in the current code.** It's a 30-60 minute code change he'll handle.
+1. Open https://app.hyperliquid.xyz (mainnet, not testnet)
+2. Connect your main wallet
+3. Go to https://app.hyperliquid.xyz/API
+4. Click "Generate" or "Authorize Existing API Wallet"
+5. You can either:
+   - **Reuse the same API wallet** you're already using on testnet (easier — no secrets to update)
+   - **Generate a fresh one for mainnet** (slightly safer separation between test and live)
+6. Sign the authorization transaction (small gas fee, usually under $1)
+7. If you generated a fresh key, update the `HL_PRIVATE_KEY` GitHub secret with the new one
 
 ---
 
-## Step 3: Authorize API Wallets on Mainnet
-
-Testnet and mainnet are separate environments. The API wallet that's already authorized on testnet needs to be authorized again on mainnet.
-
-For each of the 3 sub-accounts:
-
-1. Open the sub-account on https://app.hyperliquid.xyz
-2. Go to https://app.hyperliquid.xyz/API
-3. Click "Generate" or "Authorize Existing API Wallet"
-4. Use the same API wallet address that's currently in the GitHub secret `HL_PRIVATE_KEY`. OR generate fresh ones for each sub-account (more secure).
-5. Sign the authorization transaction (small gas fee)
-6. Note which API wallet is authorized for which sub-account
-
-Send Brendan: the private key + sub-account address for each of the 3 bots.
-
-**If you generate fresh API wallets per sub-account:**
-- You'll have 3 different private keys
-- Each is only authorized for its specific sub-account
-- Safer if any one key leaks
-
----
-
-## Step 4: Bridge USDC to Hyperliquid
+## Step 3: Bridge USDC to Hyperliquid
 
 Real money in.
 
 1. Open https://app.hyperliquid.xyz/deposit
-2. Choose Arbitrum as the source (cheapest gas)
-3. Send USDC from Josh's source wallet (Coinbase, Metamask, etc.) to the Hyperliquid bridge
+2. Choose Arbitrum as the source (cheapest gas fees)
+3. Send USDC from your source wallet (Coinbase, MetaMask, etc.) to the Hyperliquid bridge
 4. Wait 1-2 minutes for confirmation
-5. **Distribute to each sub-account:**
-   - Send $X to the Daily sub-account
-   - Send $Y to the Intraday sub-account
-   - Send $Z to the Aggressive sub-account
+5. The USDC lands in your main account — all three bots draw from the same pool
 
-Use the recommended starting amounts from Step 1.
+Use the recommended starting amounts from Step 1 as the total deposit.
 
 ---
 
-## Step 5: Tighten Safety Parameters
+## Step 4: Tighten Safety Parameters
 
 For mainnet, tighten the drawdown thresholds. Real money should have tighter guardrails.
 
@@ -158,42 +136,41 @@ Update the capital variables to match what you actually bridged:
 
 ---
 
-## Step 6: Reset Bot State Gists
+## Step 5: Reset Bot State Gists
 
 The bots remember what positions they "own." But those memories are from testnet. Before mainnet, wipe them so the bots start fresh.
 
 **Important:** This will erase the testnet trade history. Make sure you've exported or noted anything important first.
 
-Brendan needs to do this part (involves Gist API). Tell him: "Ready to reset state for mainnet."
+Edit each of the 3 state Gists and replace the entire contents with just `{}`:
 
-He'll run something like:
-```
-gh gist edit <DAILY_GIST> -f trading_state.json - <<< '{}'
-gh gist edit <INTRADAY_GIST> -f intraday_state.json - <<< '{}'
-gh gist edit <AGGRESSIVE_GIST> -f aggressive_state.json - <<< '{}'
-```
+1. Go to `https://gist.github.com/<your-username>` (or the account that owns your Gists)
+2. Open your `trading_state.json` Gist, click "Edit," replace all content with `{}`, save
+3. Repeat for `intraday_state.json` and `aggressive_state.json`
 
----
-
-## Step 7: Run a Test Trade on Mainnet (Critical)
-
-Before letting the real bots run, do a manual test trade with a tiny amount.
-
-### How (Brendan does this part):
-
-1. Update HL_TESTNET to false temporarily
-2. Trigger the `test-trade.yml` workflow
-3. It places a $10 BTC trade and immediately closes it
-4. Verifies authentication, order placement, fills, and close all work on mainnet
-5. Total expected loss: $0.01-$0.05 in slippage + Hyperliquid fees
-
-If this fails, **do not proceed**. There's a real bug that needs fixing first.
+The bots will rebuild their state from scratch on their next run.
 
 ---
 
-## Step 8: Flip the Testnet Flag
+## Step 6: Run a Test Trade on Mainnet (Critical)
 
-This is the actual go-live moment.
+Before letting the real bots run, do a manual test trade with a tiny amount to verify everything works with real money.
+
+1. Temporarily set `HL_TESTNET` to `false` in your GitHub variables
+2. Go to your Actions tab
+3. Click "Test Trade" workflow
+4. Click "Run workflow"
+5. Wait ~1 minute, then check the run output
+
+The test places a $10 BTC trade and immediately closes it. Expected loss: $0.01-$0.05 in slippage and Hyperliquid fees.
+
+If it succeeds (shows fills and a close), you're clear to proceed. If it fails, **do not proceed** — investigate the error before going live.
+
+---
+
+## Step 7: Flip the Testnet Flag (Go-Live)
+
+If it's not already flipped from the test trade step, do it now:
 
 1. Go to https://github.com/aicodepathways/crypto-yall/settings/variables/actions
 2. Find `HL_TESTNET`
@@ -204,7 +181,7 @@ This is the actual go-live moment.
 
 ---
 
-## Step 9: Watch the First 10 Runs Manually
+## Step 8: Watch the First 10 Runs Manually
 
 For the first day:
 
@@ -223,11 +200,11 @@ For the first day:
 
 ---
 
-## Step 10: Slowly Scale Up
+## Step 9: Slowly Scale Up
 
 After **at least 1 week** of clean mainnet operation:
 
-- Bridge more USDC into the sub-accounts
+- Bridge more USDC to your Hyperliquid account
 - Update the capital variables to match
 - Watch for another week
 - Repeat
@@ -340,7 +317,7 @@ Mainnet is one variable flip away. But the preparation is everything:
 
 If you've done all of that honestly, you're ready. If you've skipped steps, don't.
 
-When ready: email Brendan and say "Ready to go to mainnet, completed the checklist." He'll do the technical pieces (sub-account code changes, test trade verification) and walk you through the flip.
+When ready: email Brendan and say "Ready to go to mainnet, completed the checklist." He'll help verify the test trade and walk you through the flip if you want a second set of eyes.
 
 ---
 
@@ -355,3 +332,35 @@ Real money introduces:
 - Real consequences
 
 Take it slow. There's no urgency. The strategies will work next month as well as this month.
+
+---
+
+## Optional: Sub-Account Setup
+
+Only relevant if you've cleared $100,000 in mainnet trading volume on Hyperliquid. If not, skip this section entirely — the shared-account setup above works fine.
+
+### Why you might want sub-accounts
+
+- Full isolation of margin per bot (no netting on the exchange)
+- Cleaner accounting per strategy
+- Easier to shut down one bot's positions without touching the others
+
+### How to create them
+
+1. Open https://app.hyperliquid.xyz/subAccounts
+2. Click "Create Sub-Account"
+3. Create three, one for each bot:
+   - `Crypto Yall Daily`
+   - `Crypto Yall Intraday`
+   - `Crypto Yall Aggressive`
+4. Fund each sub-account by transferring USDC from your main account
+
+### Then send Brendan
+
+For each sub-account:
+- The sub-account address
+- The API wallet private key authorized for that sub-account
+
+Brendan will do a one-time refactor to point each bot at its own sub-account key. Estimated time: 30-60 minutes of code work.
+
+**Important:** This is a one-time change for YOUR setup. It does NOT need to be repeated for any community members who fork the repo — their forks work independently.

@@ -165,7 +165,7 @@ If still stale after 5 minutes:
 
 **Cause:** All three bots share the same Hyperliquid account. If Daily bot opened ETH long ($300 worth) and Aggressive bot opened ETH short ($100 worth), Hyperliquid sees a single net position of $200 long.
 
-This is a known limitation we'll fix with Hyperliquid sub-accounts before mainnet.
+This is a known limitation of the shared-account architecture. Hyperliquid sub-accounts would fix it, but they require $100,000+ in mainnet trading volume to unlock, so most users can't use them. The code-level ownership tracking still keeps each bot managing only its own positions safely.
 
 **What to do:** Nothing urgent. The dashboards will still show each bot's intended position correctly. The actual exchange shows the net. Email Brendan if it gets confusing.
 

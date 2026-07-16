@@ -278,7 +278,7 @@ All three bots use the **same Hyperliquid account** but each tracks its own posi
 1. **Positions can net on the exchange** — if Daily opens ETH long and Aggressive opens ETH short, Hyperliquid sees the net.
 2. **Margin is shared** — total margin usage is summed across all three bots.
 
-**Recommended fix before mainnet:** Hyperliquid sub-accounts (one per bot). Each bot gets its own segregated margin account. Requires Josh to authorize 3 separate API wallets.
+**Note on sub-accounts:** Hyperliquid sub-accounts would give each bot its own segregated margin account and eliminate netting. However, they require $100,000+ in mainnet trading volume to unlock, so they're unavailable to most users. The shared-account model works fine with the built-in ownership tracking — netting is a minor efficiency issue, not a safety one.
 
 ---
 
@@ -757,7 +757,7 @@ curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"
 
 **Cause:** Position got netted out by another bot opening opposite direction.
 
-**Fix:** This is the shared-account issue. Migrate to sub-accounts before mainnet (see [Going to Mainnet](#12-going-to-mainnet)).
+**Fix:** This is the shared-account limitation. Sub-accounts require $100k+ volume so aren't a realistic fix for most users. The code-level ownership tracking already handles safety — this is an efficiency issue, not a bug.
 
 ### Bot won't trade — keeps saying "0 trades, own 0 positions"
 
@@ -771,12 +771,8 @@ curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"
 
 ### Pre-flight checklist
 
-- [ ] **Hyperliquid sub-accounts created** (3 of them, one per bot)
-- [ ] **API wallets authorized on mainnet** (separate auth from testnet)
-- [ ] **USDC bridged to Hyperliquid mainnet** in starting amounts:
-  - Daily: $500-$1k recommended for week 1
-  - Intraday: $300-$500
-  - Aggressive: $200-$300
+- [ ] **API wallet authorized on mainnet** (separate auth from testnet)
+- [ ] **USDC bridged to Hyperliquid mainnet** in starting amount: $1,000-$2,000 total for all three bots combined
 - [ ] **GitHub variables updated:**
   ```bash
   gh variable set HL_TESTNET -b "false"
@@ -799,27 +795,24 @@ curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"
 - [ ] **Run `test_trade.py` workflow on mainnet** to confirm fills work
 - [ ] **Watch first 5-10 runs manually** before letting it run unattended
 
-### Sub-account setup steps for Josh
+### Optional: Sub-account setup
 
-1. Visit https://app.hyperliquid.xyz/portfolio
-2. In the sub-accounts panel, create 3 sub-accounts:
+Only relevant if you've cleared $100,000+ in mainnet trading volume on Hyperliquid (the platform requirement to unlock sub-accounts). Most users skip this section entirely.
+
+If you qualify:
+
+1. Visit https://app.hyperliquid.xyz/subAccounts
+2. Create 3 sub-accounts:
    - `Crypto Yall Daily`
    - `Crypto Yall Intraday`
    - `Crypto Yall Aggressive`
 3. For each, click into the sub-account, then go to https://app.hyperliquid.xyz/API
-4. Generate an API wallet for that sub-account
+4. Generate an API wallet authorized for that sub-account
 5. Send Brendan: sub-account address + API wallet private key for each
 
-### After Josh provides sub-account credentials
+Brendan will do a one-time refactor to point each bot at its own sub-account key (adds `HL_DAILY_KEY`, `HL_INTRADAY_KEY`, `HL_AGGRESSIVE_KEY` env vars and updates the workflow YAMLs). Estimated time: 30-60 minutes of code work.
 
-Code changes needed:
-1. Add per-bot `HL_PRIVATE_KEY` + `HL_ACCOUNT_ADDRESS` env vars
-2. Daily bot uses `HL_DAILY_KEY` / `HL_DAILY_ADDRESS`
-3. Intraday bot uses `HL_INTRADAY_KEY` / `HL_INTRADAY_ADDRESS`
-4. Aggressive bot uses `HL_AGGRESSIVE_KEY` / `HL_AGGRESSIVE_ADDRESS`
-5. Each workflow YAML updated with the right secret references
-
-Estimated time to wire up: 30-45 minutes. Test on testnet first by creating testnet sub-accounts the same way.
+**Note:** This is a one-time change for the master repo. Community members who fork the repo do NOT need this — their forks work fine with a single Hyperliquid account each.
 
 ### Mainnet operational discipline
 
