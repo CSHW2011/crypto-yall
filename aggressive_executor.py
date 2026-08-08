@@ -209,7 +209,7 @@ def execute_trade(info, exchange, trade: dict, capital: float, leverage: float) 
     mid = get_mid_price(info, coin)
     # Pyramid adds use smaller size
     size_pct = PYRAMID_SIZE_PCT if trade["action"].startswith("pyramid_") else POSITION_SIZE_PCT
-    notional = capital * size_pct * leverage
+    notional = max(capital * size_pct * leverage, 12.0)
     raw_size = notional / mid
     sz_decimals = get_size_decimals(info, coin)
     size = round_size(raw_size, sz_decimals)
