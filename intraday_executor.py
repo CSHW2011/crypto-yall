@@ -278,7 +278,11 @@ def main():
 
     # Ownership tracking: only manage positions this bot opened
     owned_coins = set(state.get("owned_coins", []))
-
+    allowed_coins = {HL_SYMBOL_MAP[t] for t in ASSETS}
+    unassigned_owned = owned_coins - allowed_coins
+    if unassigned_owned:
+        print(f"Dropping owned coins no longer assigned to Intraday: {unassigned_owned}")
+        owned_coins -= unassigned_owned
     # Reconcile: drop owned coins that no longer have a position on the exchange
     stale_owned = owned_coins - set(open_positions.keys())
     if stale_owned:
