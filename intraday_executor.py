@@ -38,7 +38,15 @@ from hyperliquid_executor import (
     _send_telegram,
 )
 from backtester import get_asset_profile
+intraday_assets_raw = os.environ.get("INTRADAY_ASSETS", "")
+intraday_assets = {a.strip().upper() for a in intraday_assets_raw.split(",") if a.strip()}
 
+if intraday_assets:
+    ASSETS = {
+        ticker: name
+        for ticker, name in ASSETS.items()
+        if HL_SYMBOL_MAP[ticker] in intraday_assets
+    }
 
 STATE_FILENAME = "intraday_state.json"
 POSITION_SIZE_PCT = 0.01
