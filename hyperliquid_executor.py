@@ -569,7 +569,11 @@ def main():
     # Ownership tracking: only manage positions this bot opened.
     # owned_coins is the set of coin symbols this bot currently holds.
     owned_coins = set(state.get("owned_coins", []))
-
+    allowed_coins = {HL_TICKER_MAP[t] for t in ASSETS}
+    unassigned_owned = owned_coins - allowed_coins
+    if unassigned_owned:
+        print(f"Dropping owned coins no longer assigned to Daily: {unassigned_owned}")
+        owned_coins -= unassigned_owned
     # Reconcile: drop owned coins that no longer have a position on the exchange
     # (e.g., another strategy or manual action closed them). This keeps state
     # consistent with the actual Hyperliquid account.
