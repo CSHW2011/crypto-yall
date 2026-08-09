@@ -61,7 +61,15 @@ ASSETS = {
     "SUI20947-USD": "Sui (SUI)",
     "XRP-USD": "XRP",
 }
+daily_assets_raw = os.environ.get("DAILY_ASSETS", "")
+daily_assets = {a.strip().upper() for a in daily_assets_raw.split(",") if a.strip()}
 
+if daily_assets:
+    ASSETS = {
+        ticker: name
+        for ticker, name in ASSETS.items()
+        if HL_TICKER_MAP[ticker] in daily_assets
+    }
 STATE_FILENAME = "trading_state.json"
 POSITION_SIZE_PCT = 0.01  # 1% of segregated capital per trade
 
