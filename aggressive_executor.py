@@ -38,7 +38,15 @@ from hyperliquid_executor import (
     _send_telegram,
 )
 from backtester import get_asset_profile
+aggressive_assets_raw = os.environ.get("AGGRESSIVE_ASSETS", "")
+aggressive_assets = {a.strip().upper() for a in aggressive_assets_raw.split(",") if a.strip()}
 
+if aggressive_assets:
+    ASSETS = {
+        ticker: name
+        for ticker, name in ASSETS.items()
+        if HL_SYMBOL_MAP[ticker] in aggressive_assets
+    }
 
 STATE_FILENAME = "aggressive_state.json"
 POSITION_SIZE_PCT = 0.015  # 1.5% per trade — higher than standard intraday
