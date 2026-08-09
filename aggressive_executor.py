@@ -304,6 +304,11 @@ def main():
 
     # Ownership tracking with stale-position reconciliation
     owned_coins = set(state.get("owned_coins", []))
+    allowed_coins = {HL_SYMBOL_MAP[t] for t in ASSETS}
+    unassigned_owned = owned_coins - allowed_coins
+    if unassigned_owned:
+        print(f"Dropping owned coins no longer assigned to Aggressive: {unassigned_owned}")
+        owned_coins -= unassigned_owned
     stale_owned = owned_coins - set(open_positions.keys())
     if stale_owned:
         print(f"Dropping stale owned coins (no position on exchange): {stale_owned}")
