@@ -319,3 +319,37 @@ def evaluate_live_position(
         "current_atr": current_atr,
         "reason": f"{side} Chandelier stop breached",
     }
+
+def evaluate_pending_reversal(
+    ticker: str,
+    df: pd.DataFrame,
+    protector_state: dict,
+) -> dict:
+    """
+    Check whether a stopped-out Daily position has received a fresh
+    hourly confirmation for the opposite direction.
+    """
+    ticker_state = protector_state[ticker]
+    pending = ticker_state.get("pending_reversal")
+
+    if pending not in ("long", "short"):
+        return {
+            "action": "none",
+            "reason": "No pending reversal",
+        }
+
+    fresh = detect_fresh_reversal(df)
+
+    if fresh != pending:
+        return {
+            "action": "wait",
+            "pending_reversal": pending,
+            "fresh_signal": fresh,
+            "reason": "Waiting for fresh hourly confirmation",
+        }
+
+    return {
+        "action": "confirmed_reversal",
+        "side": pending,
+        "reason": f"Fresh hourly {pending} reversal confirmed",
+    }
