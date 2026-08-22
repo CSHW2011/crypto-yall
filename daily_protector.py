@@ -353,3 +353,28 @@ def evaluate_pending_reversal(
         "side": pending,
         "reason": f"Fresh hourly {pending} reversal confirmed",
     }
+
+def build_reversal_trade_intent(
+    ticker: str,
+    side: str,
+) -> dict:
+    """
+    Build an order intent for a confirmed Daily protective reversal.
+
+    This function does not execute the order.
+    """
+    if ticker not in PROTECTED_TICKERS:
+        raise ValueError(f"Ticker not protected by Daily protector: {ticker}")
+
+    if side not in ("long", "short"):
+        raise ValueError(f"Invalid reversal side: {side}")
+
+    hl_coin = HL_TICKER_MAP[ticker]
+
+    return {
+        "ticker": ticker,
+        "hl_coin": hl_coin,
+        "action": "open_long" if side == "long" else "open_short",
+        "side": side,
+        "reason": f"Confirmed hourly protective reversal to {side}",
+    }
