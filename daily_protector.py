@@ -497,3 +497,20 @@ def run_dry_check() -> list[dict]:
             )
 
     return actions
+
+def main() -> None:
+    """
+    Run the Daily protector in dry-run mode and print intended actions.
+    """
+    print(f"Daily protector dry run started at {dt.datetime.now(dt.timezone.utc).isoformat()}")
+
+    actions = run_dry_check()
+
+    for action in actions:
+        print(action)
+
+    print("Daily protector dry run complete")
+
+
+if __name__ == "__main__":
+    main()
