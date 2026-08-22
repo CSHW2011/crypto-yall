@@ -72,6 +72,30 @@ def build_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
   def find_entry_timestamp(state: dict, ticker: str) -> pd.Timestamp | None:
     """
+    Find the most recent successful open trade for this ticker in Daily history.
+    """
+    history = state.get("history", [])
+
+    for item in reversed(history):
+        if item.get("ticker") != ticker:
+            continue
+        if item.get("status") != "filled":
+            continue
+        if item.get("action") not in ("open_long", "open_short"):
+            continue
+
+        ts = item.get("timestamp")
+        if not ts:
+            continue
+
+        try:
+            return pd.to_datetime(ts, utc=True)
+        except Exception:
+            continue
+
+    return None
+
+
 def calculate_chandelier_stop(
     df: pd.DataFrame,
     entry_time: pd.Timestamp,
@@ -110,25 +134,32 @@ def calculate_chandelier_stop(
         stop_level = lowest_since + atr_mult * current_atr
 
     return stop_level, current_price, current_atr
-    Find the most recent successful open trade for this ticker in Daily history.
+
+
+def detect_fresh_reversal(df: pd.DataFrame) -> str | None:
     """
-    history = state.get("history", [])
+    Detect a fresh hourly oscillator reversal confirmation.
 
-    for item in reversed(history):
-        if item.get("ticker") != ticker:
-            continue
-        if item.get("status") != "filled":
-            continue
-        if item.get("action") not in ("open_long", "open_short"):
-            continue
+    Returns:
+        "long"  when oscillator crosses up through OSC_LOWER
+        "short" when oscillator crosses down through OSC_UPPER
+        None    otherwise
+    """
+    if df.empty:
+        return None
 
-        ts = item.get("timestamp")
-        if not ts:
-            continue
+    features = build_hourly_features(df)
 
-        try:
-            return pd.to_datetime(ts, utc=True)
-        except Exception:
-            continue
+    if len(features) < 2:
+        return None
+
+    prev_osc = float(features["Osc"].iloc[-2])
+    curr_osc = float(features["Osc"].iloc[-1])
+
+    if prev_osc <= OSC_LOWER < curr_osc:
+        return "long"
+
+    if prev_osc >= OSC_UPPER > curr_osc:
+        return "short"
 
     return None
