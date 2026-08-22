@@ -221,3 +221,34 @@ def clear_pending_reversal(
     ticker_state["pending_reversal"] = None
     ticker_state["protective_exit_at"] = None
     ticker_state["stopped_from"] = None
+
+def chandelier_stop_breached(
+    df: pd.DataFrame,
+    entry_time: pd.Timestamp,
+    is_long: bool,
+    atr_mult: float,
+) -> tuple[bool, float, float, float] | None:
+    """
+    Check whether the current hourly close has breached the Chandelier stop.
+
+    Returns:
+        (breached, stop_level, current_price, current_atr)
+    """
+    result = calculate_chandelier_stop(
+        df=df,
+        entry_time=entry_time,
+        is_long=is_long,
+        atr_mult=atr_mult,
+    )
+
+    if result is None:
+        return None
+
+    stop_level, current_price, current_atr = result
+
+    if is_long:
+        breached = current_price <= stop_level
+    else:
+        breached = current_price >= stop_level
+
+    return breached, stop_level, current_price, current_atr
