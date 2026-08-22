@@ -163,3 +163,26 @@ def detect_fresh_reversal(df: pd.DataFrame) -> str | None:
         return "short"
 
     return None
+
+def get_protector_state(state: dict) -> dict:
+    """
+    Return the persistent Daily protector state.
+
+    Each ticker may store:
+        pending_reversal: "long", "short", or None
+        protective_exit_at: UTC timestamp or None
+        stopped_from: "long", "short", or None
+    """
+    protector = state.setdefault("daily_protector", {})
+
+    for ticker in PROTECTED_TICKERS:
+        protector.setdefault(
+            ticker,
+            {
+                "pending_reversal": None,
+                "protective_exit_at": None,
+                "stopped_from": None,
+            },
+        )
+
+    return protector
