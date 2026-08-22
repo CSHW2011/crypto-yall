@@ -252,3 +252,70 @@ def chandelier_stop_breached(
         breached = current_price >= stop_level
 
     return breached, stop_level, current_price, current_atr
+
+def evaluate_live_position(
+    ticker: str,
+    position: dict,
+    df: pd.DataFrame,
+    state: dict,
+) -> dict:
+    """
+    Evaluate one Daily-owned live position.
+
+    Returns an action dict with:
+        action: "hold" or "protective_exit"
+        side: "long" or "short"
+        stop_level
+        current_price
+        current_atr
+        reason
+    """
+    size = float(position["size"])
+    is_long = size > 0
+    side = "long" if is_long else "short"
+
+    entry_time = find_entry_timestamp(state, ticker)
+    if entry_time is None:
+        return {
+            "action": "hold",
+            "side": side,
+            "reason": "No Daily entry timestamp found",
+        }
+
+    profile = get_asset_profile(ticker)
+    atr_mult = float(profile.get("atr_mult", 3.0))
+
+    result = chandelier_stop_breached(
+        df=df,
+        entry_time=entry_time,
+        is_long=is_long,
+        atr_mult=atr_mult,
+    )
+
+    if result is None:
+        return {
+            "action": "hold",
+            "side": side,
+            "reason": "Insufficient hourly ATR data",
+        }
+
+    breached, stop_level, current_price, current_atr = result
+
+    if not breached:
+        return {
+            "action": "hold",
+            "side": side,
+            "stop_level": stop_level,
+            "current_price": current_price,
+            "current_atr": current_atr,
+            "reason": "Chandelier stop intact",
+        }
+
+    return {
+        "action": "protective_exit",
+        "side": side,
+        "stop_level": stop_level,
+        "current_price": current_price,
+        "current_atr": current_atr,
+        "reason": f"{side} Chandelier stop breached",
+    }
