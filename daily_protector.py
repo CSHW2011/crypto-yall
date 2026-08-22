@@ -72,6 +72,44 @@ def build_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
   def find_entry_timestamp(state: dict, ticker: str) -> pd.Timestamp | None:
     """
+def calculate_chandelier_stop(
+    df: pd.DataFrame,
+    entry_time: pd.Timestamp,
+    is_long: bool,
+    atr_mult: float,
+) -> tuple[float, float, float] | None:
+    """
+    Calculate the current Chandelier stop for a Daily-owned position.
+
+    Returns:
+        (stop_level, current_price, current_atr)
+    """
+    if df.empty:
+        return None
+
+    features = build_hourly_features(df)
+
+    if entry_time is not None:
+        features = features[features.index >= entry_time]
+
+    if features.empty:
+        return None
+
+    current = features.iloc[-1]
+    current_price = float(current["Close"])
+    current_atr = float(current["ATR"])
+
+    if np.isnan(current_atr) or current_atr <= 0:
+        return None
+
+    if is_long:
+        highest_since = float(features["High"].max())
+        stop_level = highest_since - atr_mult * current_atr
+    else:
+        lowest_since = float(features["Low"].min())
+        stop_level = lowest_since + atr_mult * current_atr
+
+    return stop_level, current_price, current_atr
     Find the most recent successful open trade for this ticker in Daily history.
     """
     history = state.get("history", [])
