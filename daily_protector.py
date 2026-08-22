@@ -378,3 +378,34 @@ def build_reversal_trade_intent(
         "side": side,
         "reason": f"Confirmed hourly protective reversal to {side}",
     }
+
+def build_protective_exit_intent(
+    ticker: str,
+    side: str,
+    stop_level: float,
+    current_price: float,
+    current_atr: float,
+) -> dict:
+    """
+    Build a close intent for a Daily position whose Chandelier stop was breached.
+
+    This function does not execute the close.
+    """
+    if ticker not in PROTECTED_TICKERS:
+        raise ValueError(f"Ticker not protected by Daily protector: {ticker}")
+
+    if side not in ("long", "short"):
+        raise ValueError(f"Invalid position side: {side}")
+
+    hl_coin = HL_TICKER_MAP[ticker]
+
+    return {
+        "ticker": ticker,
+        "hl_coin": hl_coin,
+        "action": "close",
+        "side": side,
+        "stop_level": stop_level,
+        "current_price": current_price,
+        "current_atr": current_atr,
+        "reason": f"{side} 3x ATR Chandelier stop breached",
+    }
