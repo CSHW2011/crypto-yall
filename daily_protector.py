@@ -186,3 +186,24 @@ def get_protector_state(state: dict) -> dict:
         )
 
     return protector
+
+def mark_protective_exit(
+    protector_state: dict,
+    ticker: str,
+    stopped_from: str,
+) -> None:
+    """
+    Record that a Daily position was protectively exited and that the
+    opposite direction is now waiting for fresh hourly confirmation.
+    """
+    ticker_state = protector_state[ticker]
+
+    ticker_state["stopped_from"] = stopped_from
+    ticker_state["protective_exit_at"] = dt.datetime.now(dt.timezone.utc).isoformat()
+
+    if stopped_from == "long":
+        ticker_state["pending_reversal"] = "short"
+    elif stopped_from == "short":
+        ticker_state["pending_reversal"] = "long"
+    else:
+        ticker_state["pending_reversal"] = None
