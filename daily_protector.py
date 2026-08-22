@@ -409,3 +409,91 @@ def build_protective_exit_intent(
         "current_atr": current_atr,
         "reason": f"{side} 3x ATR Chandelier stop breached",
     }
+
+def run_dry_check() -> list[dict]:
+    """
+    Evaluate Daily-owned BTC/ETH positions and pending reversals.
+
+    Dry-run only:
+    - does not close positions
+    - does not open positions
+    - returns the actions the protector would take
+    """
+    state = load_trading_state()
+    protector_state = get_protector_state(state)
+
+    info, exchange, address = get_client()
+    open_positions = get_open_positions(info, address)
+
+    daily_owned = set(state.get("owned_coins", []))
+    protected_owned = {
+        coin: position
+        for coin, position in open_positions.items()
+        if coin in daily_owned
+        and coin in {HL_TICKER_MAP[t] for t in PROTECTED_TICKERS}
+    }
+
+    hourly_data = fetch_all_intraday(
+        tickers=list(PROTECTED_TICKERS),
+        interval="1h",
+        lookback_hours=LOOKBACK_HOURS,
+    )
+
+    actions = []
+
+    for ticker in PROTECTED_TICKERS:
+        hl_coin = HL_TICKER_MAP[ticker]
+        df = hourly_data.get(ticker, pd.DataFrame())
+
+        if hl_coin in protected_owned:
+            decision = evaluate_live_position(
+                ticker=ticker,
+                position=protected_owned[hl_coin],
+                df=df,
+                state=state,
+            )
+
+            if decision.get("action") == "protective_exit":
+                actions.append(
+                    build_protective_exit_intent(
+                        ticker=ticker,
+                        side=decision["side"],
+                        stop_level=decision["stop_level"],
+                        current_price=decision["current_price"],
+                        current_atr=decision["current_atr"],
+                    )
+                )
+            else:
+                actions.append(
+                    {
+                        "ticker": ticker,
+                        "action": "hold",
+                        "reason": decision.get("reason", "No protective action"),
+                    }
+                )
+
+            continue
+
+        reversal = evaluate_pending_reversal(
+            ticker=ticker,
+            df=df,
+            protector_state=protector_state,
+        )
+
+        if reversal.get("action") == "confirmed_reversal":
+            actions.append(
+                build_reversal_trade_intent(
+                    ticker=ticker,
+                    side=reversal["side"],
+                )
+            )
+        else:
+            actions.append(
+                {
+                    "ticker": ticker,
+                    "action": reversal.get("action", "none"),
+                    "reason": reversal.get("reason", "No pending reversal"),
+                }
+            )
+
+    return actions
