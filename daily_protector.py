@@ -207,3 +207,17 @@ def mark_protective_exit(
         ticker_state["pending_reversal"] = "long"
     else:
         ticker_state["pending_reversal"] = None
+
+def clear_pending_reversal(
+    protector_state: dict,
+    ticker: str,
+) -> None:
+    """
+    Clear protector reversal state after a confirmed reversal is completed
+    or when the pending reversal should be cancelled.
+    """
+    ticker_state = protector_state[ticker]
+
+    ticker_state["pending_reversal"] = None
+    ticker_state["protective_exit_at"] = None
+    ticker_state["stopped_from"] = None
