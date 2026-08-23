@@ -225,6 +225,44 @@ def clear_pending_reversal(
     ticker_state["protective_exit_at"] = None
     ticker_state["stopped_from"] = None
 
+def sync_state_after_result(
+    state: dict,
+    result: dict,
+    info,
+    address: str,
+) -> None:
+    """
+    Update Daily trading state after a protector execution result.
+    """
+    owned_coins = set(state.get("owned_coins", []))
+    history = state.get("history", [])
+
+    if result.get("status") == "filled":
+        coin = result["hl_coin"]
+
+        if result["action"] == "close":
+            owned_coins.discard(coin)
+        else:
+            owned_coins.add(coin)
+
+    history.append(
+        {
+            "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
+            **{k: v for k, v in result.items() if k != "raw"},
+        }
+    )
+
+    state["history"] = history[-500:]
+    state["last_run"] = dt.datetime.now(dt.timezone.utc).isoformat()
+    state["owned_coins"] = sorted(owned_coins)
+
+    latest_positions = get_open_positions(info, address)
+    state["open_positions"] = {
+        coin: position
+        for coin, position in latest_positions.items()
+        if coin in owned_coins
+    }
+
 def chandelier_stop_breached(
     df: pd.DataFrame,
     entry_time: pd.Timestamp,
