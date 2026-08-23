@@ -27,6 +27,7 @@ from hyperliquid_executor import (
     get_mid_price,
     load_trading_state,
     save_trading_state,
+    execute_trade,
 )
 
 from backtester import get_asset_profile
