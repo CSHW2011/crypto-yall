@@ -70,7 +70,9 @@ def build_hourly_features(df: pd.DataFrame) -> pd.DataFrame:
     out["ATR"] = atr
 
     return out
-  def find_entry_timestamp(state: dict, ticker: str) -> pd.Timestamp | None:
+  
+  
+def find_entry_timestamp(state: dict, ticker: str) -> pd.Timestamp | None:
     """
     Find the most recent successful open trade for this ticker in Daily history.
     """
