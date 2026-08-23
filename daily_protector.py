@@ -781,6 +781,8 @@ def main() -> None:
 
     print(f"Daily protector LIVE_MODE = {LIVE_MODE}")
 
+    print(f"Trading Gist ID = {os.environ.get('GIST_ID')}")
+
     actions = run_dry_check()
 
     for action in actions:
