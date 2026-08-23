@@ -608,8 +608,6 @@ def main() -> None:
 
     for action in actions:
         print(action)
-      
-    run_simulated_chandelier_test() 
 
     print("Daily protector dry run complete")
 
