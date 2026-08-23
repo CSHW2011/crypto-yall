@@ -773,9 +773,11 @@ def run_simulated_chandelier_test() -> None:
 
 def main() -> None:
     """
-    Run the Daily protector in dry-run mode and print intended actions.
+    Run the Daily protector and print intended or executed actions.
     """
-    print(f"Daily protector dry run started at {dt.datetime.now(dt.timezone.utc).isoformat()}")
+
+    mode_label = "LIVE" if LIVE_MODE else "DRY RUN"
+    print(f"Daily protector {mode_label} started at {dt.datetime.now(dt.timezone.utc).isoformat()}")
 
     print(f"Daily protector LIVE_MODE = {LIVE_MODE}")
 
@@ -784,7 +786,7 @@ def main() -> None:
     for action in actions:
         print(action)
 
-    print("Daily protector dry run complete")
+    print(f"Daily protector {mode_label} complete")
 
 
 if __name__ == "__main__":
