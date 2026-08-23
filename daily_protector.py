@@ -514,11 +514,11 @@ if hl_coin in protected_owned:
         )
 
     continue
-        reversal = evaluate_pending_reversal(
-            ticker=ticker,
-            df=df,
-            protector_state=protector_state,
-        )
+reversal = evaluate_pending_reversal(
+    ticker=ticker,
+    df=df,
+    protector_state=protector_state,
+)
 
 if reversal.get("action") == "confirmed_reversal":
     intent = build_reversal_trade_intent(
