@@ -534,6 +534,11 @@ def run_dry_check() -> list[dict]:
     - returns the actions the protector would take
     """
     state = load_trading_state()
+
+    print(f"Loaded state keys = {sorted(state.keys())}")
+    print(f"History entries = {len(state.get('history', []))}")
+    print(f"Owned coins = {state.get('owned_coins', 'KEY NOT PRESENT')}")
+
     protector_state = get_protector_state(state)
 
     info, exchange, address = get_client()
@@ -781,7 +786,6 @@ def main() -> None:
 
     print(f"Daily protector LIVE_MODE = {LIVE_MODE}")
 
-    print(f"Trading Gist ID = {os.environ.get('GIST_ID')}")
 
     actions = run_dry_check()
 
