@@ -476,56 +476,75 @@ def run_dry_check() -> list[dict]:
         hl_coin = HL_TICKER_MAP[ticker]
         df = hourly_data.get(ticker, pd.DataFrame())
 
-        if hl_coin in protected_owned:
-            decision = evaluate_live_position(
-                ticker=ticker,
-                position=protected_owned[hl_coin],
-                df=df,
-                state=state,
-            )
+if hl_coin in protected_owned:
+    decision = evaluate_live_position(
+        ticker=ticker,
+        position=protected_owned[hl_coin],
+        df=df,
+        state=state,
+    )
 
-            if decision.get("action") == "protective_exit":
-                actions.append(
-                    build_protective_exit_intent(
-                        ticker=ticker,
-                        side=decision["side"],
-                        stop_level=decision["stop_level"],
-                        current_price=decision["current_price"],
-                        current_atr=decision["current_atr"],
-                    )
-                )
-            else:
-                actions.append(
-                    {
-                        "ticker": ticker,
-                        "action": "hold",
-                        "reason": decision.get("reason", "No protective action"),
-                    }
-                )
+    if decision.get("action") == "protective_exit":
+        intent = build_protective_exit_intent(
+            ticker=ticker,
+            side=decision["side"],
+            stop_level=decision["stop_level"],
+            current_price=decision["current_price"],
+            current_atr=decision["current_atr"],
+        )
 
-            continue
+        result = execute_intent_if_enabled(
+            info=info,
+            exchange=exchange,
+            intent=intent,
+            capital=0.0,
+            leverage=1.0,
+            live_mode=False,
+        )
 
+        actions.append(result)
+
+    else:
+        actions.append(
+            {
+                "ticker": ticker,
+                "action": "hold",
+                "reason": decision.get("reason", "No protective action"),
+            }
+        )
+
+    continue
         reversal = evaluate_pending_reversal(
             ticker=ticker,
             df=df,
             protector_state=protector_state,
         )
 
-        if reversal.get("action") == "confirmed_reversal":
-            actions.append(
-                build_reversal_trade_intent(
-                    ticker=ticker,
-                    side=reversal["side"],
-                )
-            )
-        else:
-            actions.append(
-                {
-                    "ticker": ticker,
-                    "action": reversal.get("action", "none"),
-                    "reason": reversal.get("reason", "No pending reversal"),
-                }
-            )
+if reversal.get("action") == "confirmed_reversal":
+    intent = build_reversal_trade_intent(
+        ticker=ticker,
+        side=reversal["side"],
+    )
+
+    result = execute_intent_if_enabled(
+        info=info,
+        exchange=exchange,
+        intent=intent,
+        capital=float(os.environ.get("SEGREGATED_CAPITAL", "1000")),
+        leverage=1.0,
+        live_mode=False,
+    )
+
+    actions.append(result)
+
+else:
+    actions.append(
+        {
+            "ticker": ticker,
+            "action": reversal.get("action", "none"),
+            "reason": reversal.get("reason", "No pending reversal"),
+        }
+    )
 
     return actions
   
