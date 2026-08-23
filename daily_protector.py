@@ -499,6 +499,52 @@ def run_dry_check() -> list[dict]:
             )
 
     return actions
+  
+  
+def run_simulated_chandelier_test() -> None:
+    """
+    Simulate Chandelier stop decisions using hourly BTC data only.
+
+    No exchange positions are opened or closed.
+    No Gist state is modified.
+    """
+    ticker = "BTC-USD"
+
+    hourly_data = fetch_all_intraday(
+        tickers=[ticker],
+        interval="1h",
+        lookback_hours=LOOKBACK_HOURS,
+    )
+
+    df = hourly_data.get(ticker, pd.DataFrame())
+
+    if df.empty:
+        print("Simulation failed: no BTC hourly data")
+        return
+
+    # Use a hypothetical entry 48 hours ago.
+    entry_time = df.index[-48]
+
+    profile = get_asset_profile(ticker)
+    atr_mult = float(profile.get("atr_mult", 3.0))
+
+    long_result = chandelier_stop_breached(
+        df=df,
+        entry_time=entry_time,
+        is_long=True,
+        atr_mult=atr_mult,
+    )
+
+    short_result = chandelier_stop_breached(
+        df=df,
+        entry_time=entry_time,
+        is_long=False,
+        atr_mult=atr_mult,
+    )
+
+    print("SIMULATED BTC LONG:", long_result)
+    print("SIMULATED BTC SHORT:", short_result)
+
 
 def main() -> None:
     """
