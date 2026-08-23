@@ -777,6 +777,8 @@ def main() -> None:
     """
     print(f"Daily protector dry run started at {dt.datetime.now(dt.timezone.utc).isoformat()}")
 
+    print(f"Daily protector LIVE_MODE = {LIVE_MODE}")
+
     actions = run_dry_check()
 
     for action in actions:
