@@ -503,7 +503,7 @@ def run_dry_check() -> list[dict]:
   
 def run_simulated_chandelier_test() -> None:
     """
-    Simulate Chandelier stop decisions using hourly BTC data only.
+    Simulate BTC Chandelier stops bar by bar.
 
     No exchange positions are opened or closed.
     No Gist state is modified.
@@ -518,32 +518,84 @@ def run_simulated_chandelier_test() -> None:
 
     df = hourly_data.get(ticker, pd.DataFrame())
 
-    if df.empty:
-        print("Simulation failed: no BTC hourly data")
+    if df.empty or len(df) < 60:
+        print("Simulation failed: insufficient BTC hourly data")
         return
 
-    # Use a hypothetical entry 48 hours ago.
-    entry_time = df.index[-48]
+    features = build_hourly_features(df)
+
+    # Hypothetical entry approximately 48 hourly bars ago.
+    entry_idx = len(features) - 48
+    entry_time = features.index[entry_idx]
+    entry_price = float(features["Close"].iloc[entry_idx])
 
     profile = get_asset_profile(ticker)
     atr_mult = float(profile.get("atr_mult", 3.0))
 
-    long_result = chandelier_stop_breached(
-        df=df,
-        entry_time=entry_time,
-        is_long=True,
-        atr_mult=atr_mult,
+    print(
+        f"SIM ENTRY: BTC @ {entry_price:.2f} "
+        f"at {entry_time} | ATR multiplier={atr_mult}"
     )
 
-    short_result = chandelier_stop_breached(
-        df=df,
-        entry_time=entry_time,
-        is_long=False,
-        atr_mult=atr_mult,
-    )
+    # ----- Simulated LONG -----
+    highest_since = float(features["High"].iloc[entry_idx])
+    long_exit = None
 
-    print("SIMULATED BTC LONG:", long_result)
-    print("SIMULATED BTC SHORT:", short_result)
+    for i in range(entry_idx + 1, len(features)):
+        row = features.iloc[i]
+
+        current_atr = float(row["ATR"])
+        if np.isnan(current_atr) or current_atr <= 0:
+            continue
+
+        highest_since = max(highest_since, float(row["High"]))
+        stop_level = highest_since - atr_mult * current_atr
+        close_price = float(row["Close"])
+
+        if close_price <= stop_level:
+            long_exit = {
+                "time": features.index[i],
+                "close": close_price,
+                "stop": stop_level,
+                "highest_since": highest_since,
+                "atr": current_atr,
+            }
+            break
+
+    if long_exit:
+        print("SIMULATED BTC LONG FIRST BREACH:", long_exit)
+    else:
+        print("SIMULATED BTC LONG: no breach")
+
+    # ----- Simulated SHORT -----
+    lowest_since = float(features["Low"].iloc[entry_idx])
+    short_exit = None
+
+    for i in range(entry_idx + 1, len(features)):
+        row = features.iloc[i]
+
+        current_atr = float(row["ATR"])
+        if np.isnan(current_atr) or current_atr <= 0:
+            continue
+
+        lowest_since = min(lowest_since, float(row["Low"]))
+        stop_level = lowest_since + atr_mult * current_atr
+        close_price = float(row["Close"])
+
+        if close_price >= stop_level:
+            short_exit = {
+                "time": features.index[i],
+                "close": close_price,
+                "stop": stop_level,
+                "lowest_since": lowest_since,
+                "atr": current_atr,
+            }
+            break
+
+    if short_exit:
+        print("SIMULATED BTC SHORT FIRST BREACH:", short_exit)
+    else:
+        print("SIMULATED BTC SHORT: no breach")
 
 
 def main() -> None:
