@@ -35,6 +35,11 @@ from backtester import get_asset_profile
 
 PROTECTED_TICKERS = {"BTC-USD", "ETH-USD"}
 
+LIVE_MODE = os.environ.get(
+    "DAILY_PROTECTOR_LIVE",
+    "false",
+).lower() == "true"
+
 OSC_UPPER = 0.5
 OSC_LOWER = -0.5
 ATR_PERIOD = 14
@@ -585,7 +590,7 @@ def run_dry_check() -> list[dict]:
                     intent=intent,
                     capital=0.0,
                     leverage=1.0,
-                    live_mode=False,
+                    live_mode=LIVE_MODE,
                 )
 
                 handle_filled_protector_result(
@@ -640,7 +645,7 @@ def run_dry_check() -> list[dict]:
                     )
                 ),
                 leverage=1.0,
-                live_mode=False,
+                live_mode=LIVE_MODE,
             )
 
             handle_filled_protector_result(
