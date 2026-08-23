@@ -263,6 +263,46 @@ def sync_state_after_result(
         if coin in owned_coins
     }
 
+def handle_filled_protector_result(
+    state: dict,
+    protector_state: dict,
+    ticker: str,
+    result: dict,
+    info,
+    address: str,
+) -> None:
+    """
+    Update protector state and Daily ownership after a filled protector trade.
+    """
+    if result.get("status") != "filled":
+        return
+
+    action = result.get("action")
+
+    if action == "close":
+        stopped_from = result.get("side")
+        if stopped_from in ("long", "short"):
+            mark_protective_exit(
+                protector_state=protector_state,
+                ticker=ticker,
+                stopped_from=stopped_from,
+            )
+
+    elif action in ("open_long", "open_short"):
+        clear_pending_reversal(
+            protector_state=protector_state,
+            ticker=ticker,
+        )
+
+    sync_state_after_result(
+        state=state,
+        result=result,
+        info=info,
+        address=address,
+    )
+
+    save_trading_state(state)
+
 def chandelier_stop_breached(
     df: pd.DataFrame,
     entry_time: pd.Timestamp,
