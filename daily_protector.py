@@ -413,6 +413,34 @@ def build_protective_exit_intent(
         "reason": f"{side} 3x ATR Chandelier stop breached",
     }
 
+def execute_intent_if_enabled(
+    info,
+    exchange,
+    intent: dict,
+    capital: float,
+    leverage: float,
+    live_mode: bool = False,
+) -> dict:
+    """
+    Execute a protector intent only when live_mode is explicitly enabled.
+
+    Dry-run behavior:
+        Returns the intent without sending an order.
+    """
+    if not live_mode:
+        return {
+            **intent,
+            "status": "dry_run",
+        }
+
+    return execute_trade(
+        info=info,
+        exchange=exchange,
+        trade=intent,
+        capital=capital,
+        leverage=leverage,
+    )
+
 def run_dry_check() -> list[dict]:
     """
     Evaluate Daily-owned BTC/ETH positions and pending reversals.
