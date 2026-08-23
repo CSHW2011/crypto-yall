@@ -588,6 +588,15 @@ def run_dry_check() -> list[dict]:
                     live_mode=False,
                 )
 
+                handle_filled_protector_result(
+                    state=state,
+                    protector_state=protector_state,
+                    ticker=ticker,
+                    result=result,
+                    info=info,
+                    address=address,
+                )
+
                 actions.append(result)
 
             else:
@@ -634,18 +643,27 @@ def run_dry_check() -> list[dict]:
                 live_mode=False,
             )
 
-            actions.append(result)
+            handle_filled_protector_result(
+                state=state,
+                protector_state=protector_state,
+                ticker=ticker,
+                result=result,
+                info=info,
+                address=address,
+            )
+
+            actions.append(result)       
 
         else:
-            actions.append(
-                {
-                    "ticker": ticker,
-                    "action": reversal.get("action", "none"),
-                    "reason": reversal.get(
-                        "reason",
-                        "No pending reversal",
-                    ),
-                }
+           actions.append(
+               {
+                   "ticker": ticker,
+                   "action": reversal.get("action", "none"),
+                   "reason": reversal.get(
+                       "reason",
+                       "No pending reversal",
+                  ),
+               }
             )
 
     return actions
