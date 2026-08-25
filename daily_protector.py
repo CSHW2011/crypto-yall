@@ -122,7 +122,12 @@ def calculate_chandelier_stop(
     features = build_hourly_features(df)
 
     if entry_time is not None:
-        features = features[features.index >= entry_time]
+        comparison_entry_time = pd.Timestamp(entry_time)
+
+        if comparison_entry_time.tzinfo is not None and features.index.tz is None:
+            comparison_entry_time = comparison_entry_time.tz_convert("UTC").tz_localize(None)
+
+        features = features[features.index >= comparison_entry_time]
 
     if features.empty:
         return None
