@@ -1,0 +1,31 @@
+name: Daily Protector Testnet Dry Run
+
+on:
+  workflow_dispatch:
+
+jobs:
+  testnet-dry-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Daily protector Testnet dry check
+        run: python daily_protector.py
+        env:
+          HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
+          HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
+          HL_TESTNET: "true"
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.TESTNET_TRADING_GIST_ID }}
+          SEGREGATED_CAPITAL: ${{ vars.SEGREGATED_CAPITAL }}
+          DAILY_PROTECTOR_LIVE: "false"
