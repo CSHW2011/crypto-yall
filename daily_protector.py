@@ -456,11 +456,6 @@ def evaluate_pending_reversal(
         }
 
     if fresh != pending:
-        clear_pending_reversal(
-            protector_state=protector_state,
-            ticker=ticker,
-        )
-
         return {
             "action": "cancelled_reversal",
             "pending_reversal": pending,
@@ -699,6 +694,13 @@ def run_dry_check() -> list[dict]:
             actions.append(result)       
 
         else:
+            if reversal.get("action") == "cancelled_reversal" and LIVE_MODE:
+                clear_pending_reversal(
+                    protector_state=protector_state,
+                    ticker=ticker,
+                )
+                save_trading_state(state)
+              
            actions.append(
                {
                    "ticker": ticker,
