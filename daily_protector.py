@@ -429,6 +429,12 @@ def evaluate_pending_reversal(
     """
     Check whether a stopped-out Daily position has received a fresh
     hourly confirmation for the opposite direction.
+
+    Behavior:
+    - No pending reversal -> return none
+    - No fresh signal -> keep waiting
+    - Fresh signal matches pending direction -> confirm reversal
+    - Fresh signal is opposite pending direction -> cancel pending reversal
     """
     ticker_state = protector_state[ticker]
     pending = ticker_state.get("pending_reversal")
@@ -441,12 +447,25 @@ def evaluate_pending_reversal(
 
     fresh = detect_fresh_reversal(df)
 
-    if fresh != pending:
+    if fresh is None:
         return {
             "action": "wait",
             "pending_reversal": pending,
             "fresh_signal": fresh,
             "reason": "Waiting for fresh hourly confirmation",
+        }
+
+    if fresh != pending:
+        clear_pending_reversal(
+            protector_state=protector_state,
+            ticker=ticker,
+        )
+
+        return {
+            "action": "cancelled_reversal",
+            "pending_reversal": pending,
+            "fresh_signal": fresh,
+            "reason": f"Pending {pending} reversal cancelled by fresh {fresh} signal",
         }
 
     return {
