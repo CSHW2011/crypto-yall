@@ -701,7 +701,7 @@ def run_dry_check() -> list[dict]:
                 )
                 save_trading_state(state)
               
-           actions.append(
+            actions.append(
                {
                    "ticker": ticker,
                    "action": reversal.get("action", "none"),
