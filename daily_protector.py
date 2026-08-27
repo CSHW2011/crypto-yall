@@ -169,6 +169,16 @@ def detect_fresh_reversal(df: pd.DataFrame) -> str | None:
     prev_osc = float(features["Osc"].iloc[-2])
     curr_osc = float(features["Osc"].iloc[-1])
 
+    print(
+        f"REVERSAL CHECK: "
+        f"prev_time={features.index[-2]}, "
+        f"curr_time={features.index[-1]}, "
+        f"prev_osc={prev_osc:.4f}, "
+        f"curr_osc={curr_osc:.4f}, "
+        f"OSC_UPPER={OSC_UPPER}, "
+        f"OSC_LOWER={OSC_LOWER}"
+    )
+
     if prev_osc <= OSC_LOWER < curr_osc:
         return "long"
 
