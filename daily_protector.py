@@ -618,10 +618,6 @@ def run_dry_check() -> list[dict]:
     """
     state = load_trading_state()
 
-    print(f"TESTNET STATE KEYS = {sorted(state.keys())}")
-    print(f"TESTNET OWNED COINS = {state.get('owned_coins')}")
-    print(f"TESTNET PROTECTOR STATE = {state.get('daily_protector', 'KEY NOT PRESENT')}")
-
     protector_state = get_protector_state(state)
 
     info, exchange, address = get_client()
