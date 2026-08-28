@@ -149,14 +149,20 @@ def calculate_chandelier_stop(
     return stop_level, current_price, current_atr
 
 
-def detect_fresh_reversal(df: pd.DataFrame) -> str | None:
+def detect_fresh_reversal(
+    df: pd.DataFrame,
+    since_time=None,
+) -> str | None:
     """
-    Detect a fresh hourly oscillator reversal confirmation.
+    Detect the most recent completed hourly oscillator reversal.
+
+    If since_time is provided, only crossover signals occurring after
+    that time are considered.
 
     Returns:
         "long"  when oscillator crosses up through OSC_LOWER
         "short" when oscillator crosses down through OSC_UPPER
-        None    otherwise
+        None    when no qualifying crossover occurred
     """
     if df.empty:
         return None
@@ -166,27 +172,67 @@ def detect_fresh_reversal(df: pd.DataFrame) -> str | None:
     if len(features) < 2:
         return None
 
-    prev_osc = float(features["Osc"].iloc[-2])
-    curr_osc = float(features["Osc"].iloc[-1])
+    if features.index.tz is not None:
+        features = features.copy()
+        features.index = features.index.tz_convert("UTC").tz_localize(None)
+
+    current_hour = (
+        pd.Timestamp.now(tz="UTC")
+        .floor("h")
+        .tz_localize(None)
+    )
+
+    features = features[features.index < current_hour]
+
+    if len(features) < 2:
+        return None
+
+    comparison_since = None
+
+    if since_time is not None:
+        comparison_since = pd.Timestamp(since_time)
+
+        if comparison_since.tzinfo is not None:
+            comparison_since = (
+                comparison_since
+                .tz_convert("UTC")
+                .tz_localize(None)
+            )
+
+    latest_signal = None
+    latest_signal_time = None
+
+    for i in range(1, len(features)):
+        signal_time = features.index[i]
+
+        if (
+            comparison_since is not None
+            and signal_time <= comparison_since
+        ):
+            continue
+
+        prev_osc = float(features["Osc"].iloc[i - 1])
+        curr_osc = float(features["Osc"].iloc[i])
+
+        if prev_osc <= OSC_LOWER < curr_osc:
+            latest_signal = "long"
+            latest_signal_time = signal_time
+
+        elif prev_osc >= OSC_UPPER > curr_osc:
+            latest_signal = "short"
+            latest_signal_time = signal_time
 
     print(
-        f"REVERSAL CHECK: "
-        f"prev_time={features.index[-2]}, "
-        f"curr_time={features.index[-1]}, "
-        f"prev_osc={prev_osc:.4f}, "
-        f"curr_osc={curr_osc:.4f}, "
+        f"REVERSAL SEARCH: "
+        f"since={comparison_since}, "
+        f"latest_signal={latest_signal}, "
+        f"latest_signal_time={latest_signal_time}, "
         f"OSC_UPPER={OSC_UPPER}, "
         f"OSC_LOWER={OSC_LOWER}"
     )
 
-    if prev_osc <= OSC_LOWER < curr_osc:
-        return "long"
-
-    if prev_osc >= OSC_UPPER > curr_osc:
-        return "short"
-
-    return None
-
+    return latest_signal
+  
 def get_protector_state(state: dict) -> dict:
     """
     Return the persistent Daily protector state.
@@ -427,17 +473,19 @@ def evaluate_pending_reversal(
     protector_state: dict,
 ) -> dict:
     """
-    Check whether a stopped-out Daily position has received a fresh
-    hourly confirmation for the opposite direction.
+    Evaluate a pending Daily reversal using completed hourly signals
+    occurring after the protective exit.
 
     Behavior:
-    - No pending reversal -> return none
-    - No fresh signal -> keep waiting
-    - Fresh signal matches pending direction -> confirm reversal
-    - Fresh signal is opposite pending direction -> cancel pending reversal
+    - No pending reversal -> none
+    - No fresh signal since protective exit -> wait
+    - Latest fresh signal matches pending direction -> confirm
+    - Latest fresh signal opposes pending direction -> cancel
     """
     ticker_state = protector_state[ticker]
+
     pending = ticker_state.get("pending_reversal")
+    protective_exit_at = ticker_state.get("protective_exit_at")
 
     if pending not in ("long", "short"):
         return {
@@ -445,7 +493,10 @@ def evaluate_pending_reversal(
             "reason": "No pending reversal",
         }
 
-    fresh = detect_fresh_reversal(df)
+    fresh = detect_fresh_reversal(
+        df=df,
+        since_time=protective_exit_at,
+    )
 
     if fresh is None:
         return {
@@ -460,7 +511,10 @@ def evaluate_pending_reversal(
             "action": "cancelled_reversal",
             "pending_reversal": pending,
             "fresh_signal": fresh,
-            "reason": f"Pending {pending} reversal cancelled by fresh {fresh} signal",
+            "reason": (
+                f"Pending {pending} reversal cancelled "
+                f"by fresh {fresh} signal"
+            ),
         }
 
     return {
