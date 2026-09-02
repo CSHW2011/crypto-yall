@@ -6,12 +6,19 @@ Uses Hyperliquid's public candleSnapshot endpoint — no auth required.
 
 import datetime as dt
 import time
+import os
 
 import pandas as pd
 import requests
 
 
-HL_CANDLE_URL = "https://api.hyperliquid.xyz/info"
+is_testnet = os.environ.get("HL_TESTNET", "true").lower() == "true"
+
+HL_CANDLE_URL = (
+    "https://api.hyperliquid-testnet.xyz/info"
+    if is_testnet
+    else "https://api.hyperliquid.xyz/info"
+)
 
 # Map yfinance-style tickers → Hyperliquid symbols
 HL_SYMBOL_MAP = {
