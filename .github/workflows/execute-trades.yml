@@ -2,8 +2,12 @@ name: Execute Trades
 
 on:
   schedule:
-    - cron: '15 0 * * *'     # Daily at 00:15 UTC (15 min after signal refresh)
-  workflow_dispatch: {}       # Manual trigger for testing
+    - cron: '15 0 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: crypto-yall-trade-coordinator
+  cancel-in-progress: false
 
 jobs:
   trade:
