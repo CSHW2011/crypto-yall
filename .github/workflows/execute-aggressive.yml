@@ -34,6 +34,7 @@ jobs:
           AGGRESSIVE_MAX_POSITIONS: ${{ vars.AGGRESSIVE_MAX_POSITIONS }}
           AGGRESSIVE_KILL_SWITCH: ${{ vars.AGGRESSIVE_KILL_SWITCH }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          COORDINATOR_GIST_ID: ${{ secrets.COORDINATOR_GIST_ID }}
           AGGRESSIVE_GIST_ID: ${{ secrets.AGGRESSIVE_GIST_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
