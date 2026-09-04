@@ -34,6 +34,7 @@ jobs:
           INTRADAY_MAX_POSITIONS: ${{ vars.INTRADAY_MAX_POSITIONS }}
           INTRADAY_KILL_SWITCH: ${{ vars.INTRADAY_KILL_SWITCH }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          COORDINATOR_GIST_ID: ${{ secrets.COORDINATOR_GIST_ID }}
           INTRADAY_GIST_ID: ${{ secrets.INTRADAY_GIST_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
