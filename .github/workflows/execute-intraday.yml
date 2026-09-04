@@ -5,6 +5,10 @@ on:
     - cron: '5 * * * *'       # Every hour at :05 UTC
   workflow_dispatch: {}
 
+ concurrency:
+  group: crypto-yall-trade-coordinator
+  cancel-in-progress: false 
+
 jobs:
   trade:
     runs-on: ubuntu-latest
