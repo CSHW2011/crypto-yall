@@ -38,6 +38,7 @@ from hyperliquid_executor import (
     _send_telegram,
 )
 from backtester import get_asset_profile
+from trade_coordinator import claim_coin, release_coin, get_coin_owner
 aggressive_assets_raw = os.environ.get("AGGRESSIVE_ASSETS", "")
 aggressive_assets = {a.strip().upper() for a in aggressive_assets_raw.split(",") if a.strip()}
 
@@ -322,25 +323,57 @@ def main():
     trades = decide_trades(signals, managed_positions, max_positions, pyramid_state)
     print(f"Decided on {len(trades)} aggressive trade(s) (own {len(owned_coins)} position(s))")
 
-    results = []
-    for trade in trades:
-        # Aggressive leverage: 4x for large cap (capped at 3x by HL), 1.5x for mid cap
-        profile = get_asset_profile(trade["ticker"])
-        leverage = min(4.0, profile["max_bull_leverage"] * 1.33)  # bumped from standard
-        result = execute_trade(info, exchange, trade, capital, leverage)
-        results.append(result)
-        print(f"  {result['ticker']} {result['action']}: {result.get('status')} | {result.get('error', '')}")
+results = []
 
-        if result.get("status") == "filled":
-            coin = result["hl_coin"]
-            if result["action"] == "close":
-                owned_coins.discard(coin)
-                pyramid_state.pop(coin, None)
-            elif result["action"].startswith("pyramid_"):
-                pyramid_state[coin] = pyramid_state.get(coin, 0) + 1
-            else:
-                owned_coins.add(coin)
-                pyramid_state[coin] = 0
+for trade in trades:
+    coin = trade["hl_coin"]
+    action = trade["action"]
+
+    # Aggressive must own the coin before opening, closing, or pyramiding.
+    if not claim_coin(coin, "aggressive"):
+        owner = get_coin_owner(coin)
+        print(
+            f"COORDINATOR BLOCKED: Aggressive cannot manage {coin}; "
+            f"owned by {owner}"
+        )
+        continue
+
+    # Aggressive leverage: 4x for large cap (capped at 3x by HL),
+    # 1.5x for mid cap
+    profile = get_asset_profile(trade["ticker"])
+    leverage = min(
+        4.0,
+        profile["max_bull_leverage"] * 1.33
+    )
+
+    result = execute_trade(info, exchange, trade, capital, leverage)
+    results.append(result)
+
+    print(
+        f"  {result['ticker']} {result['action']}: "
+        f"{result.get('status')} | {result.get('error', '')}"
+    )
+
+    if result.get("status") == "filled":
+        coin = result["hl_coin"]
+
+        if result["action"] == "close":
+            owned_coins.discard(coin)
+            pyramid_state.pop(coin, None)
+            release_coin(coin, "aggressive")
+
+        elif result["action"].startswith("pyramid_"):
+            pyramid_state[coin] = pyramid_state.get(coin, 0) + 1
+
+        else:
+            owned_coins.add(coin)
+            pyramid_state[coin] = 0
+
+    elif action != "close":
+        # Opening or pyramid order failed.
+        # If there is no existing Aggressive position, release the lock.
+        if coin not in owned_coins:
+            release_coin(coin, "aggressive")
 
     history = state.get("history", [])
     for r in results:
