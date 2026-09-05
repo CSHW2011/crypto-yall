@@ -31,6 +31,7 @@ from hyperliquid_executor import (
 )
 
 from backtester import get_asset_profile
+from trade_coordinator import claim_coin, release_coin, get_coin_owner
 
 
 PROTECTED_TICKERS = {"BTC-USD", "ETH-USD"}
@@ -659,13 +660,35 @@ def run_dry_check() -> list[dict]:
         # Existing Daily-owned position
         # -----------------------------------------
         if hl_coin in protected_owned:
-            decision = evaluate_live_position(
-                ticker=ticker,
-                position=protected_owned[hl_coin],
-                df=df,
-                state=state,
-            )
+            owner = get_coin_owner(hl_coin)
 
+            if owner not in (None, "daily"):
+               actions.append(
+                   {
+                      "ticker": ticker,
+                      "action": "blocked",
+                      "reason": (
+                          f"Coordinator ownership belongs to {owner}; "
+                          "Daily Protector will not manage this position"
+                      ),
+                   }
+               )
+               continue
+
+            if LIVE_MODE and not claim_coin(hl_coin, "daily"):
+                owner = get_coin_owner(hl_coin)
+                actions.append(
+                    {
+                        "ticker": ticker,
+                        "action": "blocked",
+                        "reason": (
+                            f"Coordinator claim failed; {hl_coin} is owned by {owner}"
+                       ),
+                    }
+                )
+                continue
+
+    decision = evaluate_live_position(
             if decision.get("action") == "protective_exit":
                 intent = build_protective_exit_intent(
                     ticker=ticker,
@@ -692,6 +715,13 @@ def run_dry_check() -> list[dict]:
                     info=info,
                     address=address,
                 )
+
+                if (
+                   LIVE_MODE
+                   and result.get("status") == "filled"
+                   and result.get("action") == "close"
+                ):
+                   release_coin(hl_coin, "daily")
 
                 actions.append(result)
 
@@ -725,6 +755,34 @@ def run_dry_check() -> list[dict]:
                 side=reversal["side"],
             )
 
+            owner = get_coin_owner(hl_coin)
+
+            if owner not in (None, "daily"):
+                actions.append(
+                    {
+                       "ticker": ticker,
+                       "action": "blocked",
+                       "reason": (
+                           f"Coordinator ownership belongs to {owner}; "
+                           "Daily Protector will not open this reversal"
+                       ),
+                    }
+                )     
+                continue
+
+            if LIVE_MODE and not claim_coin(hl_coin, "daily"):
+                owner = get_coin_owner(hl_coin)
+                actions.append(
+                    {
+                       "ticker": ticker,
+                       "action": "blocked",
+                       "reason": (
+                           f"Coordinator claim failed; {hl_coin} is owned by {owner}"
+                      ),
+                   }
+               )
+               continue
+
             result = execute_intent_if_enabled(
                 info=info,
                 exchange=exchange,
@@ -747,6 +805,12 @@ def run_dry_check() -> list[dict]:
                 info=info,
                 address=address,
             )
+
+            if (
+               LIVE_MODE
+               and result.get("status") != "filled"
+            ):
+               release_coin(hl_coin, "daily")
 
             actions.append(result)       
 
