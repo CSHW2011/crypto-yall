@@ -26,6 +26,7 @@ jobs:
           HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
           HL_TESTNET: "true"
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          COORDINATOR_GIST_ID: ${{ secrets.COORDINATOR_GIST_ID }}
           GIST_ID: ${{ secrets.TESTNET_TRADING_GIST_ID }}
           SEGREGATED_CAPITAL: ${{ vars.SEGREGATED_CAPITAL }}
           DAILY_PROTECTOR_LIVE: "false"
