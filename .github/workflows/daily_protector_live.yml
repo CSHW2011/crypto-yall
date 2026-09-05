@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "*/15 * * * *"
 
+    concurrency:
+      group: crypto-yall-trade-coordinator
+      cancel-in-progress: false
+
 jobs:
   live-protector:
     runs-on: ubuntu-latest
