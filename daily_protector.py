@@ -688,57 +688,62 @@ def run_dry_check() -> list[dict]:
                 )
                 continue
 
-    decision = evaluate_live_position(
-            if decision.get("action") == "protective_exit":
-                intent = build_protective_exit_intent(
-                    ticker=ticker,
-                    side=decision["side"],
-                    stop_level=decision["stop_level"],
-                    current_price=decision["current_price"],
-                    current_atr=decision["current_atr"],
-                )
+   decision = evaluate_live_position(
+    ticker=ticker,
+    position=protected_owned[hl_coin],
+    df=df,
+    state=state,
+)
 
-                result = execute_intent_if_enabled(
-                    info=info,
-                    exchange=exchange,
-                    intent=intent,
-                    capital=0.0,
-                    leverage=1.0,
-                    live_mode=LIVE_MODE,
-                )
+if decision.get("action") == "protective_exit":
+    intent = build_protective_exit_intent(
+        ticker=ticker,
+        side=decision["side"],
+        stop_level=decision["stop_level"],
+        current_price=decision["current_price"],
+        current_atr=decision["current_atr"],
+    )
 
-                handle_filled_protector_result(
-                    state=state,
-                    protector_state=protector_state,
-                    ticker=ticker,
-                    result=result,
-                    info=info,
-                    address=address,
-                )
+    result = execute_intent_if_enabled(
+        info=info,
+        exchange=exchange,
+        intent=intent,
+        capital=0.0,
+        leverage=1.0,
+        live_mode=LIVE_MODE,
+    )
 
-                if (
-                   LIVE_MODE
-                   and result.get("status") == "filled"
-                   and result.get("action") == "close"
-                ):
-                   release_coin(hl_coin, "daily")
+    handle_filled_protector_result(
+        state=state,
+        protector_state=protector_state,
+        ticker=ticker,
+        result=result,
+        info=info,
+        address=address,
+    )
 
-                actions.append(result)
+    if (
+        LIVE_MODE
+        and result.get("status") == "filled"
+        and result.get("action") == "close"
+    ):
+        release_coin(hl_coin, "daily")
 
-            else:
-                actions.append(
-                    {
-                        "ticker": ticker,
-                        "action": "hold",
-                        "reason": decision.get(
-                            "reason",
-                            "No protective action",
-                        ),
-                    }
-                )
+    actions.append(result)
 
-            continue
+else:
+    actions.append(
+        {
+            "ticker": ticker,
+            "action": "hold",
+            "reason": decision.get(
+                "reason",
+                "No protective action",
+            ),
+        }
+    )
 
+continue
         # -----------------------------------------
         # No open Daily position:
         # check for a pending confirmed reversal
