@@ -1,6 +1,6 @@
 from trade_coordinator import get_coin_owner, claim_coin
 
-coin = "BTC"
+coin = "ETH"
 
 before = get_coin_owner(coin)
 print(f"BTC owner before Intraday claim attempt: {before}")
