@@ -2,12 +2,12 @@ name: Execute Intraday
 
 on:
   schedule:
-    - cron: '5 * * * *'       # Every hour at :05 UTC
+    - cron: '5 * * * *'
   workflow_dispatch: {}
 
- concurrency:
+concurrency:
   group: crypto-yall-trade-coordinator
-  cancel-in-progress: false 
+  cancel-in-progress: false
 
 jobs:
   trade:
