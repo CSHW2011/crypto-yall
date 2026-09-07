@@ -295,44 +295,44 @@ def main():
     trades = decide_trades(signals, managed_positions, max_positions)
     print(f"Decided on {len(trades)} intraday trade(s) (own {len(owned_coins)} position(s))")
 
-results = []
-
-for trade in trades:
-    coin = trade["hl_coin"]
-    action = trade["action"]
-
-    # Every trade must first obtain coordinator ownership.
-    # This includes closes so an older position with no coordinator
-    # owner yet can safely establish ownership before being managed.
-    if not claim_coin(coin, "intraday"):
-        owner = get_coin_owner(coin)
+    results = []
+    
+    for trade in trades:
+        coin = trade["hl_coin"]
+        action = trade["action"]
+    
+        # Every trade must first obtain coordinator ownership.
+        # This includes closes so an older position with no coordinator
+        # owner yet can safely establish ownership before being managed.
+        if not claim_coin(coin, "intraday"):
+            owner = get_coin_owner(coin)
+            print(
+                f"COORDINATOR BLOCKED: Intraday cannot manage {coin}; "
+                f"owned by {owner}"
+            )
+            continue
+    
+        leverage = 2.0  # Fixed 2x for intraday: more conservative than daily
+        result = execute_trade(info, exchange, trade, capital, leverage)
+        results.append(result)
+    
         print(
-            f"COORDINATOR BLOCKED: Intraday cannot manage {coin}; "
-            f"owned by {owner}"
+            f"  {result['ticker']} {result['action']}: "
+            f"{result.get('status')} | {result.get('error', '')}"
         )
-        continue
-
-    leverage = 2.0  # Fixed 2x for intraday: more conservative than daily
-    result = execute_trade(info, exchange, trade, capital, leverage)
-    results.append(result)
-
-    print(
-        f"  {result['ticker']} {result['action']}: "
-        f"{result.get('status')} | {result.get('error', '')}"
-    )
-
-    if result.get("status") == "filled":
-        coin = result["hl_coin"]
-
-        if result["action"] == "close":
-            owned_coins.discard(coin)
+    
+        if result.get("status") == "filled":
+            coin = result["hl_coin"]
+    
+            if result["action"] == "close":
+                owned_coins.discard(coin)
+                release_coin(coin, "intraday")
+            else:
+                owned_coins.add(coin)
+    
+        elif action != "close":
+            # An opening order failed, so do not leave the coin locked.
             release_coin(coin, "intraday")
-        else:
-            owned_coins.add(coin)
-
-    elif action != "close":
-        # An opening order failed, so do not leave the coin locked.
-        release_coin(coin, "intraday")
         
     history = state.get("history", [])
     for r in results:
