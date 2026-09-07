@@ -652,7 +652,7 @@ def run_dry_check() -> list[dict]:
 
     actions = []
 
-         for ticker in PROTECTED_TICKERS:
+    for ticker in PROTECTED_TICKERS:
         hl_coin = HL_TICKER_MAP[ticker]
         df = hourly_data.get(ticker, pd.DataFrame())
 
