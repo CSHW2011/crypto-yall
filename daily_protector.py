@@ -779,14 +779,14 @@ def run_dry_check() -> list[dict]:
                 owner = get_coin_owner(hl_coin)
                 actions.append(
                     {
-                       "ticker": ticker,
-                       "action": "blocked",
-                       "reason": (
-                           f"Coordinator claim failed; {hl_coin} is owned by {owner}"
-                      ),
-                   }
-               )
-               continue
+                        "ticker": ticker,
+                        "action": "blocked",
+                        "reason": (
+                            f"Coordinator claim failed; {hl_coin} is owned by {owner}"
+                        ),
+                    }
+                )
+                continue
 
             result = execute_intent_if_enabled(
                 info=info,
