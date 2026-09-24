@@ -375,27 +375,27 @@ def main():
             if coin not in owned_coins:
                 release_coin(coin, "aggressive")
 
-history = state.get("history", [])
-for r in results:
-    history.append({
-        "timestamp": dt.datetime.now(dt.UTC).isoformat(),
-        **{k: v for k, v in r.items() if k != "raw"},
-    })
-state["history"] = history[-500:]
-state["last_equity"] = equity
-state["last_run"] = dt.datetime.now(dt.UTC).isoformat()
-state["owned_coins"] = sorted(owned_coins)
-state["pyramid_state"] = pyramid_state
-latest = get_open_positions(info, address)
-state["open_positions"] = {c: p for c, p in latest.items() if c in owned_coins}
-state["last_signals"] = signals
-save_state(state)
-
-summary = f"{len(results)} aggressive trade(s) | Equity: ${equity:,.2f}"
-if results:
-    _send_email(results, summary)
-    _send_telegram(results, summary)
-print("Done")
+    history = state.get("history", [])
+    for r in results:
+        history.append({
+            "timestamp": dt.datetime.now(dt.UTC).isoformat(),
+            **{k: v for k, v in r.items() if k != "raw"},
+        })
+    state["history"] = history[-500:]
+    state["last_equity"] = equity
+    state["last_run"] = dt.datetime.now(dt.UTC).isoformat()
+    state["owned_coins"] = sorted(owned_coins)
+    state["pyramid_state"] = pyramid_state
+    latest = get_open_positions(info, address)
+    state["open_positions"] = {c: p for c, p in latest.items() if c in owned_coins}
+    state["last_signals"] = signals
+    save_state(state)
+    
+    summary = f"{len(results)} aggressive trade(s) | Equity: ${equity:,.2f}"
+    if results:
+        _send_email(results, summary)
+        _send_telegram(results, summary)
+    print("Done")
 
 
 if __name__ == "__main__":
