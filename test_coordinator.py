@@ -1,6 +1,6 @@
 from trade_coordinator import get_coin_owner, release_coin
 
-coin = "ETH"
+coin = "SOL"
 
 before = get_coin_owner(coin)
 print(f"{coin} owner before release: {before}")
