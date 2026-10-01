@@ -1,12 +1,12 @@
-from trade_coordinator import get_coin_owner, release_coin
+from trade_coordinator import get_coin_owner, claim_coin
 
-coin = "LINK"
+coin = "SOL"
 
 before = get_coin_owner(coin)
-print(f"{coin} owner before Aggressive release: {before}")
+print(f"{coin} owner before Daily claim attempt: {before}")
 
-released = release_coin(coin, "aggressive")
-print(f"Aggressive release result: {released}")
+claimed = claim_coin(coin, "daily")
+print(f"Daily claim result: {claimed}")
 
 after = get_coin_owner(coin)
-print(f"{coin} owner after Aggressive release: {after}")
+print(f"{coin} owner after Daily claim attempt: {after}")
