@@ -1,6 +1,6 @@
 from trade_coordinator import get_coin_owner, claim_coin
 
-coin = "SOL"
+coin = "BTC"
 
 before = get_coin_owner(coin)
 print(f"{coin} owner before Daily claim attempt: {before}")
