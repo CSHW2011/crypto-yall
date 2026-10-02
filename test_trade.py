@@ -74,9 +74,6 @@ def main():
     if positions:
         print(f"Position confirmed: {positions[0]}")
 
-    print("Leaving BTC position open for Daily Protector coordinator test.")
-    return
-
     # 5. Close position
     print("\nClosing position…")
     close_resp = exchange.market_close("BTC")
