@@ -429,6 +429,20 @@ def evaluate_live_position(
     is_long = size > 0
     side = "long" if is_long else "short"
 
+    if (
+       ticker == "BTC-USD"
+       and os.environ.get("HL_TESTNET", "true").lower() == "true"
+       and os.environ.get("FORCE_DAILY_PROTECTOR_EXIT", "false").lower() == "true"
+    ):
+       return {
+           "action": "protective_exit",
+           "side": side,
+           "stop_level": 0.0,
+           "current_price": float(position.get("entry_px", 0.0)),
+           "current_atr": 0.0,
+           "reason": "Forced Testnet protective exit for coordinator validation",
+       }
+
     entry_time = find_entry_timestamp(state, ticker)
     if entry_time is None:
         return {
