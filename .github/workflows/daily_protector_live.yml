@@ -31,6 +31,7 @@ jobs:
           HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
           HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
           HL_TESTNET: "true"
+          FORCE_DAILY_PROTECTOR_EXIT: "true"
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           COORDINATOR_GIST_ID: ${{ secrets.COORDINATOR_GIST_ID }}
           GIST_ID: ${{ secrets.TESTNET_TRADING_GIST_ID }}
