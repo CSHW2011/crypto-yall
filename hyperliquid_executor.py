@@ -149,6 +149,7 @@ def get_open_positions(info, address: str) -> dict:
             "size": size,  # signed: + long, - short
             "entry_px": float(pos["entryPx"]),
             "unrealized_pnl": float(pos["unrealizedPnl"]),
+            "return_on_equity": float(pos.get("returnOnEquity", 0)),
         }
     return positions
 
