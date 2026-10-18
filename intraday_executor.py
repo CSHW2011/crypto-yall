@@ -267,6 +267,14 @@ def main():
 
     signals = compute_intraday_signals()
     open_positions = get_open_positions(info, address)
+
+    peak_roe = state.get("peak_roe", {})
+
+    for coin, pos in open_positions.items():
+        current_roe = float(pos.get("return_on_equity", 0.0))
+        previous_peak = float(peak_roe.get(coin, current_roe))
+        peak_roe[coin] = max(previous_peak, current_roe)
+    
     capital = float(os.environ.get("INTRADAY_CAPITAL", "5000"))
     max_positions = int(os.environ.get("INTRADAY_MAX_POSITIONS", "2"))
 
@@ -346,6 +354,14 @@ def main():
     state["owned_coins"] = sorted(owned_coins)
     latest = get_open_positions(info, address)
     state["open_positions"] = {c: p for c, p in latest.items() if c in owned_coins}
+
+    peak_roe = {
+        coin: value
+        for coin, value in peak_roe.items()
+        if coin in owned_coins and coin in latest
+    }
+    state["peak_roe"] = peak_roe
+
     state["last_signals"] = signals
     save_state(state)
 
