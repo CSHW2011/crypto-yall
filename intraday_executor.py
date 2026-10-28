@@ -146,23 +146,16 @@ def decide_trades(
         current_roe = float(pos.get("return_on_equity", 0.0))
         position_peak_roe = float(peak_roe.get(hl_coin, current_roe))
 
-        # Protect profitable positions once peak ROE reaches +40%.
-        if position_peak_roe >= 0.40:
-            protected_roe = max(0.15, position_peak_roe * 0.70)
-
-            if current_roe <= protected_roe:
-                trades.append({
-                    "ticker": ticker,
-                    "hl_coin": hl_coin,
-                    "action": "close",
-                    "side": "long" if is_long else "short",
-                    "reason": (
-                        f"trailing profit exit: ROE {current_roe:.1%} "
-                        f"<= protected {protected_roe:.1%} "
-                        f"from peak {position_peak_roe:.1%}"
-                    ),
-                })
-                continue
+        # Intraday fixed take-profit: close once ROE reaches +15%.
+        if current_roe >= 0.15:
+            trades.append({
+                "ticker": ticker,
+                "hl_coin": hl_coin,
+                "action": "close",
+                "side": "long" if is_long else "short",
+                "reason": f"15% ROE take-profit reached: {current_roe:.1%}",
+            })
+            continue
 
         action = info["action"]
         if (action == "sell_exit" and is_long) or \
